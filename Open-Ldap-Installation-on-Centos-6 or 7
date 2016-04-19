@@ -1,0 +1,48 @@
+OpenLDAP Software is an open source implementation of the Lightweight Directory Access Protocol.
+The suite includes:
+slapd - stand-alone LDAP daemon (server)
+libraries implementing the LDAP protocol, and
+utilities, tools, and sample clients
+
+Step 1 : Install Openldap Server (only on the ldap host machine) and clients ( for machines that need to access the ldap server )
+On LDAP server host
+        yum -y install openldap openldap-clients openldap-servers
+        
+On client hosts
+        yum -y install openldap openldap-clients        
+
+Step 2 : Start the ldap server
+        sudo service slapd start        
+        
+        
+Step 3 : Change the Domain name (instead of 'dc=example,dc=com' ) using the 'ldapmodify' command
+        ldapmodify -Q -Y EXTERNAL -H ldapi:/// <<EOF
+        dn: olcDatabase={2}hdb,cn=config
+        changetype: modify
+        replace: olcSuffix
+        olcSuffix: dc=hortonworks,dc=com
+        EOF
+        
+Step 4 : Change the Admin User accordingly Here set as 'cn=admin,dc=hortonworks,dc=com'
+         ldapmodify -Q -Y EXTERNAL -H ldapi:/// <<EOF
+         dn: olcDatabase={2}hdb,cn=config
+         changetype: modify
+         replace: olcRootDN
+         olcRootDN: cn=admin,dc=hortonworks,dc=com
+         EOF
+         
+Step 5 :  Change the root password
+        Generate new password using `slappasswd`        
+        
+Step 6 : Set that password in the configuration file
+        ldapmodify -Q -Y EXTERNAL -H ldapi:/// <<EOF
+        dn: olcDatabase={2}hdb,cn=config
+        changetype: modify
+        add: olcRootPW
+        olcRootPW: {SSHA}3wVxJbdsdIzrUZR4GnLjZp9obfKAG/8H
+        EOF
+        
+Step 7: Test the connection
+        Command Syntax
+        ldapwhoami -D <Bind dn> -w < bind dn password >       
+    
