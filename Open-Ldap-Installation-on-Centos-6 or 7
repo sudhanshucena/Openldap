@@ -46,3 +46,9 @@ Step 7: Test the connection
         Command Syntax
         ldapwhoami -D <Bind dn> -w < bind dn password >       
     
+
+
+
+DEBUGGING COMMON ERRORS:
+
+http://www.openldap.org/doc/admin24/appendix-common-errors.html
