@@ -46,6 +46,27 @@ Step 7: Test the connection
         Command Syntax
         ldapwhoami -D <Bind dn> -w < bind dn password >       
     
+-----------------------------------------------------------------------
+Adding nis,cosine,intorgperson schema to the ldap schema
+
+1. create a config file as below
+
+[root@sandbox openldap_schema]# vi schema.conf
+                include /etc/openldap/schema/core.schema
+                include /etc/openldap/schema/cosine.schema
+                include /etc/openldap/schema/nis.schema
+                include /etc/openldap/schema/inetorgperson.schema
+
+2. mkdir /opt/openldap_schema/config                
+
+3. Create the schema files 
+
+[root@sandbox openldap_schema]# slaptest -f schema.conf -F /opt/openldap_schema/config
+                
+4.[root@sandbox openldap_schema]# cd /opt/openldap_schema/config/cn\=config/cn\=schema
+ 
+
+
 
 
 
