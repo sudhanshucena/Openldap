@@ -1,0 +1,44 @@
+#!/bin/bash
+echo Installing SSSD...
+yum -y install sssd
+touch /etc/sssd/sssd.conf
+echo "SSSD Installation Complete...!"
+ehco "Configuring LDAP Connection..."
+echo "Enter LDAP_SEARCH_BASE in the Format 'dc=hortonworks,dc=com'"
+read LSB
+echo "Enter LDAP hostname"
+read LDAPURI
+echo "Creating sssd.conf file..."
+echo "[sssd]" >> /etc/sssd/sssd.conf
+echo "config_file_version = 2" >> /etc/sssd/sssd.conf
+echo "services = nss" >> /etc/sssd/sssd.conf
+echo "domains = default" >> /etc/sssd/sssd.conf
+echo "   " >> /etc/sssd/sssd.conf
+echo "[nss]" >> /etc/sssd/sssd.conf
+echo "filter_users = root" >> /etc/sssd/sssd.conf
+echo "filter_groups = root" >> /etc/sssd/sssd.conf
+echo "reconnection_retries = 3" >> /etc/sssd/sssd.conf
+echo "debug_level = 5" >> /etc/sssd/sssd.conf
+echo "[domain/default]" >> /etc/sssd/sssd.conf
+echo "auth_provider = ldap" >> /etc/sssd/sssd.conf
+echo "ldap_schema = rfc2307" >> /etc/sssd/sssd.conf
+echo "ldap_search_base =" $LSB  >> /etc/sssd/sssd.conf
+echo "ldap_group_member = uniquemember" >> /etc/sssd/sssd.conf
+echo "id_provider = ldap" >> /etc/sssd/sssd.conf
+echo "chpass_provider = ldap" >> /etc/sssd/sssd.conf
+echo "ldap_uri = ldap://"$LDAPURI >> /etc/sssd/sssd.conf
+echo "cache_credentials = True" >> /etc/sssd/sssd.conf
+echo "entry_cache_timeout = 600" >> /etc/sssd/sssd.conf
+echo "ldap_network_timeout = 3" >> /etc/sssd/sssd.conf
+echo "entry_cache_nowait_percentage = 75" >> /etc/sssd/sssd.conf
+chmod 0700 /etc/sssd/sssd.conf
+sed '/passwd:     files/s/$/ sss/' /etc/nsswitch.conf >> /etc/nsswitch.conf1
+sed '/group:	  files/s/$/ sss/' /etc/nsswitch.conf1 >> /etc/nsswitch.conf2
+rm /etc/nsswitch.conf
+rm /etc/nsswitch.conf1
+mv /etc/nsswitch.conf2 /etc/nsswitch.conf
+service sssd start
+chkconfig sssd on
+echo "sssd started...!"
+echo "Check by issuing command 'id ali' "
+
