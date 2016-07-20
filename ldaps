@@ -1,0 +1,112 @@
+http://www.server-world.info/en/note?os=CentOS_6&p=ssl   --- ldap centos6
+http://www.server-world.info/en/note?os=CentOS_7&p=openldap&f=4 --centos7
+
+ranger ssl - https://mail-archives.apache.org/mod_mbox/incubator-ranger-user/201508.mbox/%3C0D76DCB5-ADA8-4491-9A31-C3C978DC9275@hortonworks.com%3E
+-------------------------------------------------------------------------
+
+I have the following snippet from an answer that Dilli Arumugam had provided to someone else
+in the past on a different forum for this problem.  You could give that a try.  He has not
+only explained the main issue but also offered  a recipe to solve it.
+
+If the certificate of AD (used for ldaps) is issued by well known CA (that is trusted by out
+of box JDK trust store),  LDAPS with AD should work seamlessly.  If the certificate is self
+signed, you have to import the  LDAPS certificate into  a local trust store and point JDK
+to use that truststore.
+
+For example:
+
+cp /etc/alternatives/java_sdk_1.7.0/jre/lib/security/cacerts /usr/hdp/2.2.0.0-2036/ranger-usersync/userSyncCAcerts
+
+keytool -import -trustcacerts -alias openLdap -file cert.pem -keystore /usr/hdp/2.2.0.0-2036/ranger-usersync/userSyncCAcerts
+(where cert.pem has the the LDAPS cert)
+
+Add  java option
+-Djavax.net.ssl.trustStore=/usr/hdp/2.2.0.0-2036/ranger-usersync/userSyncCAcerts
+To
+/usr/hdp/2.2.0.0-2036/ranger-usersync/ranger-usersync-services.sh
+
+Where it invokes java command like the following
+
+nohup java -Djavax.net.ssl.trustStore=/usr/hdp/2.2.0.0-2036/ranger-usersync/userSyncCAcerts
+ . . .
+
+
+From: Aneela Saleem
+Reply-To: "user@ranger.incubator.apache.org<mailto:user@ranger.incubator.apache.org>"
+Date: Monday, August 24, 2015 at 3:04 AM
+To: "user@ranger.incubator.apache.org<mailto:user@ranger.incubator.apache.org>"
+Subject: UserSync with ldaps (LDAP over SSL)
+
+Hi all,
+
+I have changed the ldap url from ldap:/// to ldaps:/// in Ranger-UserSync install.properties
+file but it fails to sync LDAP users. And following are the logs from usersync plugin and
+attached is the install.properties file. Can you please have a look and pin point where should
+i write the certificate path?
+
+javax.naming.CommunicationException: simple bind failed: 127.0.0.1:636<http://127.0.0.1:636>
+[Root exception is javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException:
+PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable
+to find valid certification path to requested target]
+at com.sun.jndi.ldap.LdapClient.authenticate(LdapClient.java:218)
+at com.sun.jndi.ldap.LdapCtx.connect(LdapCtx.java:2740)
+at com.sun.jndi.ldap.LdapCtx.<init>(LdapCtx.java:316)
+at com.sun.jndi.ldap.LdapCtxFactory.getUsingURL(LdapCtxFactory.java:193)
+at com.sun.jndi.ldap.LdapCtxFactory.getUsingURLs(LdapCtxFactory.java:211)
+at com.sun.jndi.ldap.LdapCtxFactory.getLdapCtxInstance(LdapCtxFactory.java:154)
+at com.sun.jndi.ldap.LdapCtxFactory.getInitialContext(LdapCtxFactory.java:84)
+at javax.naming.spi.NamingManager.getInitialContext(NamingManager.java:684)
+at javax.naming.InitialContext.getDefaultInitCtx(InitialContext.java:307)
+at javax.naming.InitialContext.init(InitialContext.java:242)
+at javax.naming.ldap.InitialLdapContext.<init>(InitialLdapContext.java:153)
+at org.apache.ranger.ldapusersync.process.LdapUserGroupBuilder.createLdapContext(LdapUserGroupBuilder.java:149)
+at org.apache.ranger.ldapusersync.process.LdapUserGroupBuilder.updateSink(LdapUserGroupBuilder.java:261)
+at org.apache.ranger.usergroupsync.UserGroupSync.run(UserGroupSync.java:58)
+at java.lang.Thread.run(Thread.java:745)
+Caused by: javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException:
+PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable
+to find valid certification path to requested target
+at sun.security.ssl.Alerts.getSSLException(Alerts.java:192)
+at sun.security.ssl.SSLSocketImpl.fatal(SSLSocketImpl.java:1904)
+at sun.security.ssl.Handshaker.fatalSE(Handshaker.java:279)
+at sun.security.ssl.Handshaker.fatalSE(Handshaker.java:273)
+at sun.security.ssl.ClientHandshaker.serverCertificate(ClientHandshaker.java:1446)
+at sun.security.ssl.ClientHandshaker.processMessage(ClientHandshaker.java:209)
+at sun.security.ssl.Handshaker.processLoop(Handshaker.java:913)
+at sun.security.ssl.Handshaker.process_record(Handshaker.java:849)
+at sun.security.ssl.SSLSocketImpl.readRecord(SSLSocketImpl.java:1023)
+at sun.security.ssl.SSLSocketImpl.performInitialHandshake(SSLSocketImpl.java:1332)
+at sun.security.ssl.SSLSocketImpl.readDataRecord(SSLSocketImpl.java:889)
+at sun.security.ssl.AppInputStream.read(AppInputStream.java:102)
+at java.io.BufferedInputStream.fill(BufferedInputStream.java:235)
+at java.io.BufferedInputStream.read1(BufferedInputStream.java:275)
+at java.io.BufferedInputStream.read(BufferedInputStream.java:334)
+at com.sun.jndi.ldap.Connection.run(Connection.java:855)
+... 1 more
+Caused by: sun.security.validator.ValidatorException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException:
+unable to find valid certification path to requested target
+at sun.security.validator.PKIXValidator.doBuild(PKIXValidator.java:385)
+at sun.security.validator.PKIXValidator.engineValidate(PKIXValidator.java:292)
+at sun.security.validator.Validator.validate(Validator.java:260)
+at sun.security.ssl.X509TrustManagerImpl.validate(X509TrustManagerImpl.java:326)
+at sun.security.ssl.X509TrustManagerImpl.checkTrusted(X509TrustManagerImpl.java:231)
+at sun.security.ssl.X509TrustManagerImpl.checkServerTrusted(X509TrustManagerImpl.java:126)
+at sun.security.ssl.ClientHandshaker.serverCertificate(ClientHandshaker.java:1428)
+... 12 more
+Caused by: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid
+certification path to requested target
+at sun.security.provider.certpath.SunCertPathBuilder.engineBuild(SunCertPathBuilder.java:196)
+at java.security.cert.CertPathBuilder.build(CertPathBuilder.java:268)
+at sun.security.validator.PKIXValidator.doBuild(PKIXValidator.java:380)
+... 18 more
+root@aneela-Lenovo-G50-70:/var/log/ranger/usersync# tail -f usersync.log
+at sun.security.ssl.X509TrustManagerImpl.validate(X509TrustManagerImpl.java:326)
+at sun.security.ssl.X509TrustManagerImpl.checkTrusted(X509TrustManagerImpl.java:231)
+at sun.security.ssl.X509TrustManagerImpl.checkServerTrusted(X509TrustManagerImpl.java:126)
+at sun.security.ssl.ClientHandshaker.serverCertificate(ClientHandshaker.java:1428)
+... 12 more
+Caused by: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid
+certification path to requested target
+at sun.security.provider.certpath.SunCertPathBuilder.engineBuild(SunCertPathBuilder.java:196)
+at java.security.cert.CertPathBuilder.build(CertPathBuilder.java:268)
+at sun.security.validator.PKIXValidator.doBuild(PKIXValidator.java:380)
